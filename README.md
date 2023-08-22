@@ -28,7 +28,7 @@ The Update Repo Tool is a command-line utility designed to simplify the process 
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/yourusername/updatemyrepos.git
+   git clone https://github.com/sumanrox/updatemyrepos.git
    ```
 2. Run the following command
    ```bash
