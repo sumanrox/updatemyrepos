@@ -1,7 +1,8 @@
 # Repository Updating Tool
 
-![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
-
+![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg) 
+### Languages used
+![C Program](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
 ## Overview
 
 The Update Repo Tool is a command-line utility designed to simplify the process of updating multiple Git repositories in one go. It recursively searches for Git repositories within a specified directory and performs a `git pull` operation on each repository, keeping them up to date.
