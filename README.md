@@ -40,3 +40,7 @@ The Update Repo Tool is a command-line utility designed to simplify the process 
 ```bash
 updatemyrepos $HOME/Projects
 ```
+
+
+### Made with ❤️ by Suman Roy
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/sumanrox/)
