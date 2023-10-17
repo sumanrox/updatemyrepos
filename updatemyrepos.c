@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 
 // ANSI color escape codes
 #define COLOR_RED     "\x1B[31m"
@@ -19,7 +20,6 @@ typedef struct {
 RepoLocation *repo_locations = NULL;
 int total_repos = 0;
 int max_repos = 0;
-
 
 int is_git_repo(const char *dir) {
     char git_path[512];
@@ -71,27 +71,48 @@ int count_git_repos(const char *root_dir) {
     return count;
 }
 
-void git_pull_repos(const char *git_path) {
+void git_clone_repo(const char *git_path, const char *repo_path, int repo_number) {
+    // Child process (execute git clone using the git:// protocol and suppress output)
+    char git_url[512];
+    snprintf(git_url, sizeof(git_url), "git://%s", repo_path);
+    freopen("/dev/null", "w", stdout);
+    freopen("/dev/null", "w", stderr);
+    execlp(git_path, git_path, "clone", "--quiet", git_url, NULL);
+    perror("Error executing git clone");
+    exit(1);
+}
+
+void git_pull_repo(const char *git_path, const char *repo_path, int repo_number) {
+    // Child process (execute git pull and suppress output)
+    chdir(repo_path);
+    freopen("/dev/null", "w", stdout);
+    freopen("/dev/null", "w", stderr);
+    execlp(git_path, git_path, "pull", "--quiet", NULL);
+    perror("Error executing git pull");
+    exit(1);
+}
+
+void git_clone_and_pull_repos(const char *git_path) {
     for (int i = 0; i < total_repos; i++) {
         pid_t pid = fork();
         if (pid == 0) {
-            // Child process (execute git pull and suppress output)
-            chdir(repo_locations[i].path);
-            freopen("/dev/null", "w", stdout);
-            freopen("/dev/null", "w", stderr);
-            execlp(git_path, git_path, "pull", NULL);
-            perror("Error executing git pull");
-            exit(1);
+            if (access(repo_locations[i].path, F_OK) == -1) {
+                git_clone_repo(git_path, repo_locations[i].path, i + 1);
+            } else {
+                git_pull_repo(git_path, repo_locations[i].path, i + 1);
+            }
         } else if (pid < 0) {
             // Error occurred
             fprintf(stderr, "Error forking process for %s\n", repo_locations[i].path);
-        } else {
-            // Parent process (wait for child to finish)
-            int status;
-            waitpid(pid, &status, 0);
-            printf("\r%s[+] Updating Repository:%s %d/%d", COLOR_GREEN, COLOR_RESET, i + 1, total_repos);
-            fflush(stdout);
         }
+    }
+
+    // Wait for all child processes to finish
+    for (int i = 0; i < total_repos; i++) {
+        int status;
+        waitpid(-1, &status, 0);
+        printf("\r%s[+] Updating Repository:%s %d/%d", COLOR_GREEN, COLOR_RESET, i + 1, total_repos);
+        fflush(stdout);
     }
 }
 
@@ -112,15 +133,17 @@ int main(int argc, char *argv[]) {
         if (total_repos_in_dir > 0) {
             printf("[+] Found Repository: %s%d%s\n", COLOR_SKY_BLUE, total_repos_in_dir, COLOR_RESET);
         } else {
-            printf("[!] %sN0 Git Repos F0und%s\n", COLOR_RED, COLOR_RESET);
+            printf("[!] %sNo Git Repos Found%s\n", COLOR_RED, COLOR_RESET);
         }
     } else {
         fprintf(stderr, "[!] Error occurred while searching Git repositories.\n");
         return 1;
     }
-    git_pull_repos(git_path);
+    git_clone_and_pull_repos(git_path);
+
     // Free the dynamically allocated memory for repo_locations
     free(repo_locations);
+
     printf("\n");
     return 0;
 }
